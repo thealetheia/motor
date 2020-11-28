@@ -1,4 +1,4 @@
-package cu
+package cutest
 
 import (
 	"fmt"
