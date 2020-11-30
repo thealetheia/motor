@@ -55,7 +55,7 @@ func cu(level int, w Writer) Fn {
 		if len(args) > 1 {
 			f, ok := args[0].(string)
 			if ok && r.MatchString(f) {
-				s := fmt.Sprintf(f+"\n", args[1:]...)
+				s := fmt.Sprintf(f, args[1:]...)
 				w.Write(level, s)
 				return true
 			}
