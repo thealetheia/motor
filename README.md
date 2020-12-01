@@ -1,5 +1,5 @@
 # Cutest
-> 🎈 A set of tools for logging, debugging, and measuring of own's code.
+> 🎈 A set of tools for logging, debugging, and measuring of one's code.
 
 ```go
 package main
@@ -87,6 +87,10 @@ Suddenly, everything made sense. No more worries about logging and metrics. I've
 There's nothing worse than `assert(2+2, 4)` and you know it.
 
 I've come to realise that at some point my code becomes aware of its surroundings, be it planned or not. Cutest programming model exploits this: there are three output modes, progressively more and more verbose. In normal conditions, my code is expected to run in log(1), debug(2), and sometimes, trace(3) modes.
+
+Now, quantitative analysis of code, benchmarks.
+
+Go can be very progressive in some major respects. For instance, it supports first–class benchmarks via `Benchmark*` functions and go test. Unfortunately, this is simply not enough. Benchmarking becomes overly counter–intuitive to apply in your development workflow the moment you walk out of the _some abstract algorithm in some abstract context_ realm. And it's a good thing. There's no point desperately trying to fit your all–round code into a very square hole that is a benchmark. Quite a lot of it has to do with data locality. In real–life, code components are far from decoupled. It's not so much of a trouble, but inconvenience—to test them as such, without constantly having to fall back and refer to them as the whole. Maybe we're better off performing at least some of the measturements while the code is still running normally? In any case, that's exactly what `speed` does. There are two things you can measure, _∆t_ and _∆d/∆t_. This may not seem like much, but in fact it's all you need. You get time and differential, latency and throughput. Go take some measurements! Good code is traceable, so you should report them over trace(). If the program runs in _speed_, it will trace automatically. The tool will then collect the printed measurements and produce a CSV (comma–separated values) output.
 
 ## Usage
 Cutest is a [no bullshit](https://www.gandi.net/en/no-bullshit) piece of software.
