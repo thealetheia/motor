@@ -66,7 +66,7 @@ func TestTinything(t *testing.T) {
 }
 ```
 
-This repository contains a small Go library, an interface, and two simple command–line tools, [**probe**](#probe) and [**speed**](#speed).
+This repository contains a small Go library, an interface, and two simple command–line tools, [**probe**](#program-probe) and [**speed**](#program-speed).
 
 ## Install
 ```
