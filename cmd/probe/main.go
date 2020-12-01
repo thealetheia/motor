@@ -7,6 +7,7 @@ import (
 	"go/token"
 	"os"
 	"os/exec"
+	"runtime"
 	"sort"
 	"strings"
 	"syscall"
@@ -14,10 +15,19 @@ import (
 )
 
 func main() {
+	retcode := 0
+	defer func() { os.Exit(retcode) }()
+	erred := func(args ...interface{}) {
+		fmt.Printf("!! ")
+		fmt.Println(args...)
+		retcode = 1
+		runtime.Goexit()
+	}
+
 	fset := token.NewFileSet()
 	packs, err := parser.ParseDir(fset, ".", nil, 0)
 	if err != nil {
-		panic(err)
+		erred(err)
 	}
 
 	tests := []string{}
@@ -36,12 +46,11 @@ func main() {
 
 	needle, trace := "", false
 	if len(os.Args) > 1 {
-		for _, r := range os.Args[1] {
-			if r == '!' {
-				trace = true
-			}
+		pattern := os.Args[1]
+		if strings.Contains(pattern, "...") {
+			trace = true
 		}
-		needle = strings.Trim(os.Args[1], "! ")
+		needle = strings.Trim(os.Args[1], ". ")
 	}
 
 	sort.Strings(tests)
@@ -57,19 +66,15 @@ func main() {
 				j++
 				if j == len(needle) {
 					args := strings.Join(os.Args[2:], " ")
-					mode := "!debug"
+					mode := "!probe.debug"
 					if trace {
-						mode = "!trace"
+						mode = "!probe.trace"
 					}
-					got := exec.Command("go", "test", "-v", "-test", test, "-args", mode, args)
+					got := exec.Command("go", "test", "-v", "-test.run", test, "-args", mode, args)
 					got.Stdout = os.Stdout
 					got.Stderr = os.Stderr
 					if err := got.Run(); err != nil {
-						if exiterr, ok := err.(*exec.ExitError); ok {
-							if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
-								os.Exit(status.ExitStatus())
-							}
-						}
+						erred(got.Args)
 					}
 				}
 			}

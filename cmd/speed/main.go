@@ -14,10 +14,19 @@ import (
 )
 
 func main() {
+	retcode := 0
+	defer func() { os.Exit(retcode) }()
+	erred := func(args ...interface{}) {
+		fmt.Printf("!! ")
+		fmt.Println(args...)
+		retcode = 1
+		runtime.Goexit()
+	}
+
 	fset := token.NewFileSet()
 	packs, err := parser.ParseDir(fset, ".", nil, 0)
 	if err != nil {
-		panic(err)
+		erred(err)
 	}
 
 	tests := []string{}
@@ -57,19 +66,15 @@ func main() {
 				j++
 				if j == len(needle) {
 					args := strings.Join(os.Args[2:], " ")
-					mode := "!debug"
+					mode := "!probe.debug"
 					if trace {
-						mode = "!trace"
+						mode = "!probe.trace"
 					}
 					got := exec.Command("go", "test", "-bench", "-v", "-run", test, "-args", mode, args)
 					got.Stdout = os.Stdout
 					got.Stderr = os.Stderr
 					if err := got.Run(); err != nil {
-						if exiterr, ok := err.(*exec.ExitError); ok {
-							if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
-								os.Exit(status.ExitStatus())
-							}
-						}
+						erred(err)
 					}
 				}
 			}

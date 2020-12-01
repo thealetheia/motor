@@ -1,3 +1,3 @@
-module github.com/tucnak/cutest
+module aletheia.icu/cutest
 
 go 1.15

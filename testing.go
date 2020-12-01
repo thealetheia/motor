@@ -2,9 +2,18 @@ package cutest
 
 import "os"
 
+var indebug, intrace bool
+
+// Inprobe is true if cutest believe it's in probe.
+//
+// As-in go test.
+func Inprobe() bool {
+	return indebug || intrace
+}
+
 func init() {
-	const debug = "!debug"
-	const trace = "!trace"
+	const debug = "!probe.debug"
+	const trace = "!probe.trace"
 
 	k := -1
 	for i, arg := range os.Args {
