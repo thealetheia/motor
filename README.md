@@ -1,21 +1,21 @@
-# Cutest
-> 🎈 A set of tools for logging, debugging, and measuring of one's code.
+# Motor
+> ⚙️  A set of tools for logging, debugging, and measuring of your code.
 
 ```go
 package main
 
-import "aletheia.icu/cutest"
+import "aletheia.icu/motor"
 
 func main() {
-	// There are three output modes.
+	// Motor functions via three three basic output modes.
 	//
 	// 1. log() is used for ordinary logs.
-	// 2. debug() is used in–probe and in debug mode.
-	// 3. trace() is a tracing mode.
-	log, debug, trace := cutest.New(nil)
+	// 2. debug() is used when "probing" and debugging.
+	// 3. trace() is invoked only tracing / benchmarking purposes.
+	log, debug, trace := motor.New()
 
 	// V(2) forces debug mode.
-	cutest.V(2)
+	motor.V(2)
 
 	log("Hello, world!")
 
@@ -38,15 +38,15 @@ func main() {
 ```go
 package main
 
-//go:generate go install aletheia.icu/cutest/cmd/probe
+//go:generate go install aletheia.icu/motor/cmd/probe
 import (
 	"strconv"
 	"testing"
 
-	"aletheia.icu/cutest"
+	"aletheia.icu/motor"
 )
 
-var log, debug, _ = cutest.New()
+var log, debug, _ = motor.New()
 
 // $ probe tinything [n]
 //
@@ -61,7 +61,7 @@ func TestTinything(t *testing.T) {
 	log("Proceed")
 
 	// in probe, simply use args to augment the test.
-	n, _ := strconv.Atoi(cutest.Args[0])
+	n, _ := strconv.Atoi(motor.Args[0])
 	log("n = %d", n)
 }
 ```
@@ -70,11 +70,11 @@ This repository contains a small Go library, an interface, and two simple comman
 
 ## Install
 ```
-go get -u aletheia.icu/cutest
+go get -u aletheia.icu/motor
 
 " optional
-go install aletheia.icu/cutest/cmd/probe
-go install aletheia.icu/cutest/cmd/speed
+go install aletheia.icu/motor/cmd/probe
+go install aletheia.icu/motor/cmd/speed
 ```
 
 ## Background
@@ -82,18 +82,18 @@ Here's the deal.
 
 I grew accustomed to a certain minimalistic programming style,
 
-Suddenly, everything made sense. No more worries about logging and metrics. I've finally managed to incoroporate unit testing into my development workflow, to the point cutest programming should probably look reminiscent of so–called test–driven development, which I learned to hate over the years.
+Suddenly, everything made sense. No more worries about logging and metrics. I've finally managed to incoroporate unit testing into my development workflow, to the point motor programming should probably look reminiscent of so–called test–driven development, which I learned to hate over the years.
 
 There's nothing worse than `assert(2+2, 4)` and you know it.
 
-I've come to realise that at some point my code becomes aware of its surroundings, be it planned or not. Cutest programming model exploits this: there are three output modes, progressively more and more verbose. In normal conditions, my code is expected to run in log(1), debug(2), and sometimes, trace(3) modes.
+I've come to realise that at some point my code becomes aware of its surroundings, be it planned or not. Motor programming model exploits this: there are three output modes, progressively more and more verbose. In normal conditions, my code is expected to run in log(1), debug(2), and sometimes, trace(3) modes.
 
 Now, quantitative analysis of code, benchmarks.
 
 Go can be very progressive in some major respects. For instance, it supports first–class benchmarks via `Benchmark*` functions and go test. Unfortunately, this is simply not enough. Benchmarking becomes overly counter–intuitive to apply in your development workflow the moment you walk out of the _some abstract algorithm in some abstract context_ realm. And it's a good thing. There's no point desperately trying to fit your all–round code into a very square hole that is a benchmark. Quite a lot of it has to do with data locality. In real–life, code components are far from decoupled. It's not so much of a trouble, but inconvenience—to test them as such, without constantly having to fall back and refer to them as the whole. Maybe we're better off performing at least some of the measturements while the code is still running normally? In any case, that's exactly what `speed` does. There are two things you can measure, _∆t_ and _∆d/∆t_. This may not seem like much, but in fact it's all you need. You get time and differential, latency and throughput. Go take some measurements! Good code is traceable, so you should report them over trace(). If the program runs in _speed_, it will trace automatically. The tool will then collect the printed measurements and produce a CSV (comma–separated values) output.
 
 ## Usage
-Cutest is a [no bullshit](https://www.gandi.net/en/no-bullshit) piece of software.
+Motor is a [no bullshit](https://www.gandi.net/en/no-bullshit) piece of software.
 
 ### Program [probe](#probe)
 Use program to run an individual probe of a test.

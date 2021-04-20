@@ -1,3 +1,3 @@
-module aletheia.icu/cutest
+module aletheia.icu/motor
 
 go 1.15

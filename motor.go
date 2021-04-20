@@ -1,4 +1,4 @@
-package cutest
+package motor
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ var (
 	Args []string
 
 	v     = 1
-	std   = &stdWriter{}
+	std   = new(stdWriter)
 	log   = cu(1, std)
 	debug = cu(2, std)
 	trace = cu(3, std)
@@ -30,7 +30,7 @@ type Fn = func(...interface{}) bool
 //
 func V(level ...int) int {
 	if len(level) > 1 {
-		panic("cutest: use V() or V(n)")
+		panic("motor: use V() or V(n)")
 	} else if level == nil {
 		return v
 	}
@@ -40,7 +40,7 @@ func V(level ...int) int {
 
 func New(w ...Writer) (Fn, Fn, Fn) {
 	if len(w) > 1 {
-		panic("cutest: use New() or New(w)")
+		panic("motor: use New() or New(w)")
 	} else if w == nil {
 		return log, debug, trace
 	}

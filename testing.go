@@ -1,12 +1,12 @@
-package cutest
+package motor
 
 import "os"
 
 var indebug, intrace bool
 
-// Inprobe is true if cutest believe it's in probe.
+// Inprobe is true if motor believes it's in probe.
 //
-// As-in go test.
+// Probe as-in running a particular test via go test.
 func Inprobe() bool {
 	return indebug || intrace
 }

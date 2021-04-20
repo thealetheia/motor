@@ -1,4 +1,4 @@
-package cutest
+package motor
 
 import "fmt"
 
