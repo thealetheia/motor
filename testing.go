@@ -1,15 +1,13 @@
 package motor
 
-import "os"
+import (
+	"fmt"
+	"os"
+	"runtime"
+	"testing"
 
-var indebug, intrace bool
-
-// Inprobe is true if motor believes it's in probe.
-//
-// Probe as-in running a particular test via go test.
-func Inprobe() bool {
-	return indebug || intrace
-}
+	"github.com/fatih/color"
+)
 
 func init() {
 	const debug = "!probe.debug"
@@ -22,18 +20,40 @@ func init() {
 			break
 		}
 	}
-
 	if k < 0 {
 		return
 	}
-
 	Args = os.Args[k+1:]
-	if os.Args[k] == debug {
-		indebug = true
+	switch os.Args[k] {
+	case debug:
 		V(2)
-	}
-	if os.Args[k] == trace {
-		intrace = true
+	case trace:
 		V(3)
+	}
+}
+
+// Assertf functions as
+func Assertf(t *testing.T) func(expected interface{}, format string, values ...interface{}) {
+	return func(l interface{}, f string, r ...interface{}) {
+		left := fmt.Sprint(l)
+		right := fmt.Sprintf(f, r...)
+		if left == right {
+			return
+		}
+		_, file, line, _ := runtime.Caller(1)
+
+		bold := color.New(color.Bold)
+		redBold := color.New(color.FgRed, color.Bold)
+		redBold.Print("!!! ")
+		fmt.Printf("%v:%v\n", file, line)
+		if diff := diff(left, right); diff != "" {
+			fmt.Printf(diff)
+		} else {
+			bold.Println("\tEXPECTED")
+			fmt.Println(left)
+			bold.Println("\tRECEIVED")
+			fmt.Println(right, "\a")
+		}
+		t.FailNow()
 	}
 }

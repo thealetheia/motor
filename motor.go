@@ -5,32 +5,34 @@ import (
 	"regexp"
 )
 
+// Fn is a
+type Fn = func(...interface{}) bool
+
 var (
 	Args []string
 
-	v     = 1
-	std   = new(stdWriter)
-	log   = cu(1, std)
-	debug = cu(2, std)
-	trace = cu(3, std)
+	stdout = &stdoutWriter{}
+	stderr = &stderrWriter{}
 
+	log   = gear(1, stdout)
+	debug = gear(2, stdout)
+	trace = gear(3, stderr)
+
+	v = 1
 	// %d, %%, %#v, etc.
 	fmtexpr = regexp.MustCompile(`%([#\+\d\.]+)?[UdfFeEgGtToOxXsuvcdb0qp%]`)
 )
 
-type Fn = func(...interface{}) bool
-
-// V reports and allows to override verbosity.
+// V reports and allows to override output verbosity.
 //
 // V(0) sets to no output.
-// V(1) is regular logging.
+// V(1) is regular logging [default].
 // V(2) is debugging mode.
-// V(3) is tracing mode.
-// V(3+n) are treated as tracing.
+// V(3..) is tracing mode.
 //
 func V(level ...int) int {
 	if len(level) > 1 {
-		panic("motor: use V() or V(n)")
+		panic("motor: use V() to get or V(level) to set verbosity")
 	} else if level == nil {
 		return v
 	}
@@ -38,16 +40,20 @@ func V(level ...int) int {
 	return v
 }
 
+// New accepts a series of writers, and constructs the interface.
+//
+// Motor programs in Go can be viewed as running in three gears,
+// each providing a different output, depending on the required
+// granularity.
+//
 func New(w ...Writer) (Fn, Fn, Fn) {
-	if len(w) > 1 {
-		panic("motor: use New() or New(w)")
-	} else if w == nil {
+	if w == nil {
 		return log, debug, trace
 	}
-	return cu(1, w[0]), cu(2, w[0]), cu(3, w[0])
+	return gear(1, w...), gear(2, w...), gear(3, w...)
 }
 
-func cu(level int, w Writer) Fn {
+func gear(level int, w ...Writer) Fn {
 	return func(args ...interface{}) bool {
 		if len(args) == 0 || v < level {
 			return v >= level
@@ -57,12 +63,17 @@ func cu(level int, w Writer) Fn {
 			f, ok := args[0].(string)
 			if ok && fmtexpr.MatchString(f) {
 				s := fmt.Sprintf(f, args[1:]...)
-				w.Write(level, s)
+				for _, w := range w {
+					w.Write(level, s)
+				}
+
 				return true
 			}
 		}
 
-		w.Write(level, args...)
+		for _, w := range w {
+			w.Write(level, args...)
+		}
 		return true
 	}
 }

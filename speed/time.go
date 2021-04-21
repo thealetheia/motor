@@ -1,6 +1,9 @@
 package speed
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // T is a repeated time measurement.
 //
@@ -9,7 +12,7 @@ import "time"
 // T's grow normally.
 type T struct {
 	label string
-	f     []F
+	fs    []F
 	ring  bool
 	// ring position
 	pos int
@@ -24,55 +27,58 @@ func Of(label string, ringSize ...int) *T {
 		t.ring = true
 		size = ringSize[0]
 	}
-	t.f = make([]F, 0, size)
+	t.fs = make([]F, 0, size)
 	return t
 }
 
 // Frames returns an ordered list of past measurements.
 func (t *T) Frames() Frames {
-	if t.pos == 0 {
-		return t.f
+	if t.ring && t.pos < len(t.fs) {
+		if t.fs[t.pos].Begin.After(t.fs[t.pos+1].Begin) {
+			return Frames(append(t.fs[t.pos:], t.fs[:t.pos]...))
+		}
 	}
-	return Frames(append(t.f[t.pos:], t.f[:t.pos]...))
+
+	return t.fs
 }
 
 // New constructs a new time measurement frame.
-func (t *T) New() F {
-	if t.pos == len(t.f) {
-		if t.ring {
+func (t *T) New() func(n ...float64) F {
+	frame := F{Begin: time.Now(), id: t.pos}
+	if t.pos == len(t.fs) {
+		if t.ring && t.pos == cap(t.fs) {
 			t.pos = 0
+			frame.id = 0
+			if len(t.fs) == 0 {
+				t.fs = append(t.fs, frame)
+			}
 		} else {
-			t.f = append(t.f, F{})
+			t.fs = append(t.fs, frame)
 		}
 	}
-	newf := F{Begin: time.Now(), id: t.pos}
-	if len(t.f) < cap(t.f) {
-		t.f = append(t.f, newf)
-	} else {
-		t.f[t.pos] = newf
-	}
-
+	t.fs[t.pos] = frame
 	t.pos++
-	return newf
+	return func(n ...float64) F {
+		frame.End = time.Now()
+		if n != nil {
+			frame.N = n[0]
+		}
+
+		if t.fs[frame.id].Begin != frame.Begin {
+			panic(ErrLateFrame)
+		}
+		if !t.fs[frame.id].End.IsZero() {
+			panic(ErrFrameClosed)
+		}
+		t.fs[frame.id] = frame
+		return frame
+	}
 }
 
-// Fulfil calls end to a measurement of the time frame.
-//
-// This method will err in case if this frame has already
-// been submitted, or if it's late, which can be the case
-// when the ring size is inadequately small compared to
-// the speed at which new frames are fulfilled.
-func (t *T) Fulfil(frame F) error {
-	frame.End = time.Now()
-
-	if t.f[frame.id].Begin != frame.Begin {
-		return ErrLateFrame
-	}
-	if !t.f[frame.id].End.IsZero() {
-		return ErrFrameClosed
-	}
-	t.f[frame.id] = frame
-	return nil
+func (t *T) Format(state fmt.State, verb rune) {
+	fs := t.Frames()
+	fmt.Fprintf(state, "%s %v (n=%d, stddev=%v)",
+		t.label, fs.Mean(), len(t.fs), fs.Stddev())
 }
 
 // Done returns a list of frames whenever the whole ring
