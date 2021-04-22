@@ -42,8 +42,7 @@ func (t *T) Frames() Frames {
 	return t.fs
 }
 
-// New constructs a new time measurement frame.
-func (t *T) New() func(n ...float64) F {
+func (t *T) addframe() F {
 	frame := F{Begin: time.Now(), id: t.pos}
 	if t.pos == len(t.fs) {
 		if t.ring && t.pos == cap(t.fs) {
@@ -58,8 +57,15 @@ func (t *T) New() func(n ...float64) F {
 	}
 	t.fs[t.pos] = frame
 	t.pos++
+	return frame
+}
+
+// Now constructs a new time measurement frame.
+func (t *T) Now() func(n ...float64) F {
+	frame := t.addframe()
 	return func(n ...float64) F {
 		frame.End = time.Now()
+		frame.Duration = frame.dt()
 		if n != nil {
 			frame.N = n[0]
 		}
@@ -73,6 +79,13 @@ func (t *T) New() func(n ...float64) F {
 		t.fs[frame.id] = frame
 		return frame
 	}
+}
+
+// Push adds a time frame to a T-ring.
+func (t *T) Push(frame F) {
+	f := t.addframe()
+	frame.id = f.id
+	t.fs[frame.id] = frame
 }
 
 func (t *T) Format(state fmt.State, verb rune) {

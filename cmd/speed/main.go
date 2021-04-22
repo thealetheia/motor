@@ -7,9 +7,9 @@ import (
 	"go/token"
 	"os"
 	"os/exec"
+	"runtime"
 	"sort"
 	"strings"
-	"syscall"
 	"unicode"
 )
 

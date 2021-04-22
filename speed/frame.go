@@ -11,6 +11,8 @@ import (
 
 // F is a time frame.
 type F struct {
+	time.Duration
+
 	// A number meant to represent the frame.
 	N     float64
 	Begin time.Time
@@ -20,19 +22,20 @@ type F struct {
 	id int
 }
 
-// New makes a new time measurement starting now.
+// Now makes a new time measurement starting now.
 //
-//     t1 := speed.New()
+//     t1 := speed.Now()
 //     <-time.After(100*time.Millisecond)
 //     debug(t1()) // 101.383ms
 //
-func New() func(n ...float64) F {
+func Now() func(n ...float64) F {
 	f := F{Begin: time.Now()}
 	return func(n ...float64) F {
 		if n != nil {
 			f.N = n[0]
 		}
 		f.End = time.Now()
+		f.Duration = f.dt()
 		return f
 	}
 }
@@ -49,7 +52,7 @@ func (f F) Format(state fmt.State, verb rune) {
 	if f.End.IsZero() {
 		b.WriteString("???")
 	} else {
-		fmt.Fprintf(&b, "%v", f.Dt().Round(time.Microsecond))
+		fmt.Fprintf(&b, "%v", f.dt().Round(time.Microsecond))
 	}
 
 format:
@@ -60,8 +63,8 @@ format:
 	b.WriteTo(state)
 }
 
-// Dt is the ∆t frame duration.
-func (f F) Dt() time.Duration {
+// ∆t
+func (f F) dt() time.Duration {
 	return f.End.Sub(f.Begin)
 }
 
@@ -71,7 +74,7 @@ type Frames []F
 func (fs Frames) Mean() time.Duration {
 	t := make([]float64, len(fs))
 	for i := range t {
-		t[i] = float64(fs[i].Dt())
+		t[i] = float64(fs[i].dt())
 	}
 	mean, _ := stats.Mean(t)
 	return time.Duration(mean).Round(time.Microsecond)
@@ -80,7 +83,7 @@ func (fs Frames) Mean() time.Duration {
 func (fs Frames) Stddev() time.Duration {
 	t := make([]float64, len(fs))
 	for i := range t {
-		t[i] = float64(fs[i].Dt())
+		t[i] = float64(fs[i].dt())
 	}
 	sdev, _ := stats.StdDevP(t)
 	return time.Duration(sdev).Round(time.Microsecond)

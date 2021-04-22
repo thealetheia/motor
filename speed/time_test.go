@@ -10,12 +10,12 @@ import (
 
 const ms = time.Millisecond
 
-func TestTime_New(t *testing.T) {
+func TestTime_Now(t *testing.T) {
 	var bench = Of("random intervals")
 
 	trace("inb4", len(bench.fs), bench.fs)
 	for i := 0; i < 50; i++ {
-		t1 := bench.New()
+		t1 := bench.Now()
 		// trace("new t", bench.fs)
 		<-time.After(15*ms + time.Duration(rand.Intn(5))*ms)
 		t1()

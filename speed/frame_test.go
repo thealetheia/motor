@@ -10,8 +10,8 @@ import (
 
 var _, debug, trace = motor.New()
 
-func TestNew(t *testing.T) {
-	t1 := New()
+func TestNow(t *testing.T) {
+	t1 := Now()
 	<-time.After(100 * time.Millisecond)
 	debug(t1())
 }
