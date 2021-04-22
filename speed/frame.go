@@ -1,7 +1,6 @@
 package speed
 
 import (
-	"bytes"
 	"fmt"
 	"strconv"
 	"time"
@@ -9,17 +8,13 @@ import (
 	"github.com/montanaflynn/stats"
 )
 
-// F is a time frame.
-type F struct {
+// T is a time frame.
+type T struct {
 	time.Duration
+	// N is meant to represent the frame.
+	N float64
 
-	// A number meant to represent the frame.
-	N     float64
-	Begin time.Time
-	End   time.Time
-
-	// Internal frame id within T.
-	id int
+	begin int64
 }
 
 // Now makes a new time measurement starting now.
@@ -28,62 +23,65 @@ type F struct {
 //     <-time.After(100*time.Millisecond)
 //     debug(t1()) // 101.383ms
 //
-func Now() func(n ...float64) F {
-	f := F{Begin: time.Now()}
-	return func(n ...float64) F {
+func Now() func(n ...float64) T {
+	t := T{begin: time.Now().UnixNano()}
+	return func(n ...float64) T {
 		if n != nil {
-			f.N = n[0]
+			t.N = n[0]
 		}
-		f.End = time.Now()
-		f.Duration = f.dt()
-		return f
+		end := time.Now().UnixNano()
+		t.Duration = time.Duration(end - t.begin)
+		return t
 	}
 }
 
-func (f F) Format(state fmt.State, verb rune) {
-	var b bytes.Buffer
+func (t T) Begin() time.Time {
+	return time.Unix(0, t.begin)
+}
+
+func (t T) End() time.Time {
+	return time.Unix(0, t.begin+int64(t.Duration))
+}
+
+func (t T) Format(state fmt.State, verb rune) {
+	dur := int64(t.Duration)
+
 	if state.Flag('+') {
-		fmt.Fprint(&b, f.Begin.UnixNano(), "-")
-		if !f.End.IsZero() {
-			fmt.Fprint(&b, f.End.UnixNano())
-			goto format
+		fmt.Fprint(state, t.begin, "-")
+		if dur != 0 {
+			fmt.Fprint(state, t.begin+dur)
+			goto suffix
 		}
 	}
-	if f.End.IsZero() {
-		b.WriteString("???")
+	if dur == 0 {
+		fmt.Fprint(state, "???")
 	} else {
-		fmt.Fprintf(&b, "%v", f.dt().Round(time.Microsecond))
+		fmt.Fprintf(state, "%v", t.Round(time.Microsecond))
 	}
 
-format:
-	if f.N != 0 {
-		n := strconv.FormatFloat(f.N, 'f', -1, 64)
-		fmt.Fprintf(&b, "(n=%s)", n)
+suffix:
+	if t.N != 0 {
+		n := strconv.FormatFloat(t.N, 'f', -1, 64)
+		fmt.Fprintf(state, "(n=%s)", n)
 	}
-	b.WriteTo(state)
-}
-
-// ∆t
-func (f F) dt() time.Duration {
-	return f.End.Sub(f.Begin)
 }
 
 // Frames i an ordered list of time measurements.
-type Frames []F
+type Frames []T
 
-func (fs Frames) Mean() time.Duration {
-	t := make([]float64, len(fs))
+func (tf Frames) Mean() time.Duration {
+	t := make([]float64, len(tf))
 	for i := range t {
-		t[i] = float64(fs[i].dt())
+		t[i] = float64(tf[i].Duration)
 	}
 	mean, _ := stats.Mean(t)
 	return time.Duration(mean).Round(time.Microsecond)
 }
 
-func (fs Frames) Stddev() time.Duration {
-	t := make([]float64, len(fs))
+func (tf Frames) Stddev() time.Duration {
+	t := make([]float64, len(tf))
 	for i := range t {
-		t[i] = float64(fs[i].dt())
+		t[i] = float64(tf[i].Duration)
 	}
 	sdev, _ := stats.StdDevP(t)
 	return time.Duration(sdev).Round(time.Microsecond)

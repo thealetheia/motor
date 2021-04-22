@@ -11,17 +11,16 @@ import (
 const ms = time.Millisecond
 
 func TestTime_Now(t *testing.T) {
-	var bench = Of("random intervals")
+	b := Of()
 
-	trace("inb4", len(bench.fs), bench.fs)
+	trace("inb4", len(b.tf), b.tf)
 	for i := 0; i < 50; i++ {
-		t1 := bench.Now()
-		// trace("new t", bench.fs)
+		t1 := b.Now()
 		<-time.After(15*ms + time.Duration(rand.Intn(5))*ms)
 		t1()
 	}
 
-	debug(bench)
+	debug(b)
 }
 
 func TestTime_Format(t *testing.T) {

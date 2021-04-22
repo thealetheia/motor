@@ -5,104 +5,101 @@ import (
 	"time"
 )
 
-// T is a repeated time measurement.
+// B is a benchmark.
 //
-// Non-zero length T's function as a ring, effectively
+// Benchmarks are repeated time measurements.
+//
+// Non-zero length B's function as a ring, effectively
 // rewriting old frames with the new ones. Zero length
-// T's grow normally.
-type T struct {
-	label string
-	fs    []F
-	ring  bool
+// B's grow normally.
+type B struct {
+	tf   []T
+	ring bool
 	// ring position
 	pos int
 }
 
-// Of constructs a repeated time measurement T.
-func Of(label string, ringSize ...int) *T {
-	t := &T{label: label}
-
+// Of constructs a benchmark.
+func Of(ringSize ...int) *B {
+	b := &B{}
 	var size int = 16
 	if ringSize != nil {
-		t.ring = true
+		b.ring = true
 		size = ringSize[0]
 	}
-	t.fs = make([]F, 0, size)
-	return t
+	b.tf = make([]T, 0, size)
+	return b
 }
 
 // Frames returns an ordered list of past measurements.
-func (t *T) Frames() Frames {
-	if t.ring && t.pos < len(t.fs) {
-		if t.fs[t.pos].Begin.After(t.fs[t.pos+1].Begin) {
-			return Frames(append(t.fs[t.pos:], t.fs[:t.pos]...))
+func (b *B) Frames() Frames {
+	if b.ring && b.pos < len(b.tf) {
+		if b.tf[b.pos].begin > b.tf[b.pos+1].begin {
+			return Frames(append(b.tf[b.pos:], b.tf[:b.pos]...))
 		}
 	}
 
-	return t.fs
+	return b.tf
 }
 
-func (t *T) addframe() F {
-	frame := F{Begin: time.Now(), id: t.pos}
-	if t.pos == len(t.fs) {
-		if t.ring && t.pos == cap(t.fs) {
-			t.pos = 0
-			frame.id = 0
-			if len(t.fs) == 0 {
-				t.fs = append(t.fs, frame)
+func (b *B) addframe() (T, int) {
+	t := T{begin: time.Now().UnixNano()}
+	id := b.pos
+	if b.pos == len(b.tf) {
+		if b.ring && b.pos == cap(b.tf) {
+			b.pos = 0
+			id = 0
+			if len(b.tf) == 0 {
+				b.tf = append(b.tf, t)
 			}
 		} else {
-			t.fs = append(t.fs, frame)
+			b.tf = append(b.tf, t)
 		}
 	}
-	t.fs[t.pos] = frame
-	t.pos++
-	return frame
+	b.tf[b.pos] = t
+	b.pos++
+	return t, id
 }
 
 // Now constructs a new time measurement frame.
-func (t *T) Now() func(n ...float64) F {
-	frame := t.addframe()
-	return func(n ...float64) F {
-		frame.End = time.Now()
-		frame.Duration = frame.dt()
+func (b *B) Now() func(n ...float64) T {
+	t, id := b.addframe()
+	return func(n ...float64) T {
+		end := time.Now().UnixNano()
+		t.Duration = time.Duration(end - t.begin)
 		if n != nil {
-			frame.N = n[0]
+			t.N = n[0]
 		}
 
-		if t.fs[frame.id].Begin != frame.Begin {
-			panic(ErrLateFrame)
+		if b.tf[id].begin != t.begin {
+			return t
 		}
-		if !t.fs[frame.id].End.IsZero() {
-			panic(ErrFrameClosed)
-		}
-		t.fs[frame.id] = frame
-		return frame
+		b.tf[id] = t
+		return t
 	}
 }
 
-// Push adds a time frame to a T-ring.
-func (t *T) Push(frame F) {
-	f := t.addframe()
-	frame.id = f.id
-	t.fs[frame.id] = frame
+// Push adds a time frame to the benchmark ring.
+func (b *B) Push(frame T) {
+	_, id := b.addframe()
+	b.tf[id] = frame
 }
 
-func (t *T) Format(state fmt.State, verb rune) {
-	fs := t.Frames()
-	fmt.Fprintf(state, "%s %v (n=%d, stddev=%v)",
-		t.label, fs.Mean(), len(t.fs), fs.Stddev())
+func (b *B) Format(state fmt.State, verb rune) {
+	tf := b.Frames()
+	fmt.Fprintf(state, "%v (n=%d, stddev=%v)",
+		tf.Mean(), len(tf), tf.Stddev())
 }
 
 // Done returns a list of frames whenever the whole ring
 // is fulfilled once.
 // func (t *T) Done() chan Frames {
-// 	if !t.ring {
+// 	if !b.ring {
 // 		panic("speed: can only wait for rings")
 // 	}
-// 	t.done = make(chan struct{})
+// 	b.done = make(chan struct{})
 // 	go func() {
-// 		for _, f := range t.f {
+// 		for _, f := range b.f {
 //			logic
 // 		}
 // 		close(done)
