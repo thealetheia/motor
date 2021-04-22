@@ -1,30 +1,38 @@
 package speed
 
 import (
-	"math/rand"
+	"fmt"
 	"testing"
 	"time"
 
 	"aletheia.icu/motor"
 )
 
-const ms = time.Millisecond
+var _, debug, trace = motor.New()
 
-func TestTime_Now(t *testing.T) {
-	b := Of()
-
-	trace("inb4", len(b.tf), b.tf)
-	for i := 0; i < 50; i++ {
-		t1 := b.Now()
-		<-time.After(15*ms + time.Duration(rand.Intn(5))*ms)
-		t1()
-	}
-
-	debug(b)
+func TestNow(t *testing.T) {
+	t1 := Now()
+	<-time.After(100 * time.Millisecond)
+	debug(t1())
 }
 
-func TestTime_Format(t *testing.T) {
-	assertf := motor.Assertf(t)
+func TestFrame_Format(tcase *testing.T) {
+	assertf := motor.Assertf(tcase)
 
-	assertf("4", "%d", 2+2)
+	var (
+		e      = time.Now().UnixNano()
+		dur    = 50 * time.Millisecond
+		b      = e - int64(dur)
+		concat = fmt.Sprintf
+	)
+
+	t := T{Duration: dur, begin: b}
+	assertf("50ms", "%v", t)
+	t0, _ := time.Parse(time.RFC3339, "2012-11-01T22:08:41+00:00")
+	t = T{Duration: 100 * time.Second, begin: t0.UnixNano()}
+	assertf("1351807721000000000-1351807821000000000", "%+v", t)
+	t = T{N: 5.51, begin: b}
+	assertf("???(n=5.51)", "%v", t)
+	t = T{N: 7, begin: b}
+	assertf(concat("%d-???(n=7)", b), "%+v", t)
 }

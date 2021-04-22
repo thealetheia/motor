@@ -2,107 +2,87 @@ package speed
 
 import (
 	"fmt"
+	"strconv"
 	"time"
+
+	"github.com/montanaflynn/stats"
 )
 
-// B is a benchmark.
+// T is a time frame.
+type T struct {
+	time.Duration
+	// N is meant to represent the frame.
+	N float64
+
+	begin int64
+}
+
+// Now makes a new time measurement starting now.
 //
-// Benchmarks are repeated time measurements.
+//     t1 := speed.Now()
+//     <-time.After(100*time.Millisecond)
+//     debug(t1()) // 101.383ms
 //
-// Non-zero length B's function as a ring, effectively
-// rewriting old frames with the new ones. Zero length
-// B's grow normally.
-type B struct {
-	tf   []T
-	ring bool
-	// ring position
-	pos int
-}
-
-// Of constructs a benchmark.
-func Of(ringSize ...int) *B {
-	b := &B{}
-	var size int = 16
-	if ringSize != nil {
-		b.ring = true
-		size = ringSize[0]
-	}
-	b.tf = make([]T, 0, size)
-	return b
-}
-
-// Frames returns an ordered list of past measurements.
-func (b *B) Frames() Frames {
-	if b.ring && b.pos < len(b.tf) {
-		if b.tf[b.pos].begin > b.tf[b.pos+1].begin {
-			return Frames(append(b.tf[b.pos:], b.tf[:b.pos]...))
-		}
-	}
-
-	return b.tf
-}
-
-func (b *B) addframe() (T, int) {
+func Now() func(n ...float64) T {
 	t := T{begin: time.Now().UnixNano()}
-	id := b.pos
-	if b.pos == len(b.tf) {
-		if b.ring && b.pos == cap(b.tf) {
-			b.pos = 0
-			id = 0
-			if len(b.tf) == 0 {
-				b.tf = append(b.tf, t)
-			}
-		} else {
-			b.tf = append(b.tf, t)
-		}
-	}
-	b.tf[b.pos] = t
-	b.pos++
-	return t, id
-}
-
-// Now constructs a new time measurement frame.
-func (b *B) Now() func(n ...float64) T {
-	t, id := b.addframe()
 	return func(n ...float64) T {
-		end := time.Now().UnixNano()
-		t.Duration = time.Duration(end - t.begin)
 		if n != nil {
 			t.N = n[0]
 		}
-
-		if b.tf[id].begin != t.begin {
-			return t
-		}
-		b.tf[id] = t
+		end := time.Now().UnixNano()
+		t.Duration = time.Duration(end - t.begin)
 		return t
 	}
 }
 
-// Push adds a time frame to the benchmark ring.
-func (b *B) Push(frame T) {
-	_, id := b.addframe()
-	b.tf[id] = frame
+func (t T) Begin() time.Time {
+	return time.Unix(0, t.begin)
 }
 
-func (b *B) Format(state fmt.State, verb rune) {
-	tf := b.Frames()
-	fmt.Fprintf(state, "%v (n=%d, stddev=%v)",
-		tf.Mean(), len(tf), tf.Stddev())
+func (t T) End() time.Time {
+	return time.Unix(0, t.begin+int64(t.Duration))
 }
 
-// Done returns a list of frames whenever the whole ring
-// is fulfilled once.
-// func (t *T) Done() chan Frames {
-// 	if !b.ring {
-// 		panic("speed: can only wait for rings")
-// 	}
-// 	b.done = make(chan struct{})
-// 	go func() {
-// 		for _, f := range b.f {
-//			logic
-// 		}
-// 		close(done)
-// 	}()
-// 	return done
-// }
+func (t T) Format(state fmt.State, verb rune) {
+	dur := int64(t.Duration)
+
+	if state.Flag('+') {
+		fmt.Fprint(state, t.begin, "-")
+		if dur != 0 {
+			fmt.Fprint(state, t.begin+dur)
+			goto suffix
+		}
+	}
+	if dur == 0 {
+		fmt.Fprint(state, "???")
+	} else {
+		fmt.Fprintf(state, "%v", t.Round(time.Microsecond))
+	}
+
+suffix:
+	if t.N != 0 {
+		n := strconv.FormatFloat(t.N, 'f', -1, 64)
+		fmt.Fprintf(state, "(n=%s)", n)
+	}
+}
+
+// Frames i an ordered list of time measurements.
+type Frames []T
+
+func (tf Frames) Mean() time.Duration {
+	t := make([]float64, len(tf))
+	for i := range t {
+		t[i] = float64(tf[i].Duration)
+	}
+	mean, _ := stats.Mean(t)
+	return time.Duration(mean).Round(time.Microsecond)
+}
+
+func (tf Frames) Stddev() time.Duration {
+	t := make([]float64, len(tf))
+	for i := range t {
+		t[i] = float64(tf[i].Duration)
+	}
+	sdev, _ := stats.StdDevP(t)
+	return time.Duration(sdev).Round(time.Microsecond)
+}
