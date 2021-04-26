@@ -45,6 +45,15 @@ func main() {
 
 	needle, trace := "", false
 	if len(os.Args) > 1 {
+		if os.Args[1] == "." {
+			got := exec.Command("go", "test", "-bench=.", "-benchmem")
+			got.Stdout = os.Stdout
+			got.Stderr = os.Stderr
+			if err := got.Run(); err != nil {
+				erred(err)
+			}
+			return
+		}
 		for _, r := range os.Args[1] {
 			if r == '!' {
 				trace = true

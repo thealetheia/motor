@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func BenchmarkFrameClassic(b *testing.B) {
+func BenchmarkTimerClassic(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		t0 := time.Now()
 		t1 := time.Now().Sub(t0)
@@ -13,24 +13,22 @@ func BenchmarkFrameClassic(b *testing.B) {
 	}
 }
 
-func BenchmarkFrameSpeed(b *testing.B) {
+func BenchmarkTimerSpeed(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		t0 := Now()
-		t1 := t0()
+		t0 := Start()
+		t1 := t0.Stop()
 		t1.Microseconds()
 	}
 }
 
-func BenchmarkManyframeClassic(b *testing.B) {
-	const N = 100
+func BenchmarkRingClassic(b *testing.B) {
 	type data struct {
 		n          float64
 		begin, end int64
 	}
-	A := make([]data, N)
-	b.ResetTimer()
+	A := make([]data, 10)
 	for i := 0; i < b.N; i++ {
-		for i := 0; i < N; i++ {
+		for i := 0; i < len(A); i++ {
 			t0 := time.Now()
 			A[i] = data{1.0,
 				t0.UnixNano(), time.Now().UnixNano()}
@@ -38,14 +36,12 @@ func BenchmarkManyframeClassic(b *testing.B) {
 	}
 }
 
-func BenchmarkManyframeSpeed(b *testing.B) {
-	const N = 100
-	t := Of(N)
-	b.ResetTimer()
+func BenchmarkRingSpeed(b *testing.B) {
+	ring := Many(10)
 	for i := 0; i < b.N; i++ {
-		for i := 0; i < N; i++ {
-			t_i := t.Now()
-			t_i(1)
+		for i := 0; i < cap(ring.Data()); i++ {
+			t := ring.Start()
+			ring.Stop(t)
 		}
 	}
 }

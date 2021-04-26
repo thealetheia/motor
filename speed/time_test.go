@@ -11,9 +11,9 @@ import (
 var _, debug, trace = motor.New()
 
 func TestNow(t *testing.T) {
-	t1 := Now()
+	t0 := Start()
 	<-time.After(100 * time.Millisecond)
-	debug(t1())
+	debug(t0.Stop())
 }
 
 func TestFrame_Format(tcase *testing.T) {

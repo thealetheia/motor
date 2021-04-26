@@ -17,22 +17,20 @@ type T struct {
 	begin int64
 }
 
-// Now makes a new time measurement starting now.
+// Start makes a new time measurement starting now.
 //
-//     t1 := speed.Now()
+//     t0 := speed.Start()
 //     <-time.After(100*time.Millisecond)
-//     debug(t1()) // 101.383ms
+//     debug(t0.Stop()) // 101.383ms
 //
-func Now() func(n ...float64) T {
-	t := T{begin: time.Now().UnixNano()}
-	return func(n ...float64) T {
-		if n != nil {
-			t.N = n[0]
-		}
-		end := time.Now().UnixNano()
-		t.Duration = time.Duration(end - t.begin)
-		return t
-	}
+func Start() T {
+	return T{begin: time.Now().UnixNano()}
+}
+
+func (t T) Stop() T {
+	end := time.Now().UnixNano()
+	t.Duration = time.Duration(end - t.begin)
+	return t
 }
 
 func (t T) Begin() time.Time {
@@ -66,22 +64,22 @@ suffix:
 	}
 }
 
-// Frames i an ordered list of time measurements.
-type Frames []T
+// Times i an ordered list of time measurements.
+type Times []T
 
-func (tf Frames) Mean() time.Duration {
-	t := make([]float64, len(tf))
+func (ts Times) Mean() time.Duration {
+	t := make([]float64, len(ts))
 	for i := range t {
-		t[i] = float64(tf[i].Duration)
+		t[i] = float64(ts[i].Duration)
 	}
 	mean, _ := stats.Mean(t)
 	return time.Duration(mean).Round(time.Microsecond)
 }
 
-func (tf Frames) Stddev() time.Duration {
-	t := make([]float64, len(tf))
+func (ts Times) Stddev() time.Duration {
+	t := make([]float64, len(ts))
 	for i := range t {
-		t[i] = float64(tf[i].Duration)
+		t[i] = float64(ts[i].Duration)
 	}
 	sdev, _ := stats.StdDevP(t)
 	return time.Duration(sdev).Round(time.Microsecond)

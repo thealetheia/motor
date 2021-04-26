@@ -11,13 +11,13 @@ import (
 const ms = time.Millisecond
 
 func TestTime_Now(t *testing.T) {
-	b := Of()
+	b := Many()
 
 	trace("inb4", len(b.tf), b.tf)
 	for i := 0; i < 50; i++ {
-		t1 := b.Now()
+		t := b.Start()
 		<-time.After(15*ms + time.Duration(rand.Intn(5))*ms)
-		t1()
+		b.Stop(t)
 	}
 
 	debug(b)
