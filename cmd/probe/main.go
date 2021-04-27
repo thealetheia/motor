@@ -17,8 +17,6 @@ func main() {
 	retcode := 0
 	defer func() { os.Exit(retcode) }()
 	erred := func(args ...interface{}) {
-		fmt.Printf("!! ")
-		fmt.Println(args...)
 		retcode = 1
 		runtime.Goexit()
 	}
