@@ -24,7 +24,21 @@ func TestTime_Now(t *testing.T) {
 }
 
 func TestTime_Format(t *testing.T) {
-	assertf := motor.Assertf(t)
+}
 
-	assertf("4", "%d", 2+2)
+func TestRing_Format(t *testing.T) {
+	assert := motor.Assert(t)
+
+	const n = 10
+	b := Many(n)
+	for i := 0; i < n; i++ {
+		t := b.Start()
+		t.N = float64(i)
+		<-time.After(10 * Ms)
+		b.Stop(t)
+	}
+
+	// Printing 95 percentile stats.
+	assert("", "%.95v", b)
+	assert("", "")
 }

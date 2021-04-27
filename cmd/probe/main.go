@@ -64,12 +64,17 @@ func main() {
 			if unicode.ToLower(rune(needle[j])) == unicode.ToLower(rune(test[i])) {
 				j++
 				if j == len(needle) {
+					var got *exec.Cmd
+
 					args := strings.Join(os.Args[2:], " ")
 					mode := "!probe.debug"
 					if trace {
 						mode = "!probe.trace"
+						got = exec.Command("dlv", "test", "--", "-test.v", "-test.run", test, mode, args)
+					} else {
+						got = exec.Command("go", "test", "-v", "-test.run", test, "-args", mode, args)
 					}
-					got := exec.Command("go", "test", "-v", "-test.run", test, "-args", mode, args)
+					got.Stdin = os.Stdin
 					got.Stdout = os.Stdout
 					got.Stderr = os.Stderr
 					if err := got.Run(); err != nil {

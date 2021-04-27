@@ -40,7 +40,7 @@ func BenchmarkRingSpeed(b *testing.B) {
 	ring := Many(10)
 	for i := 0; i < b.N; i++ {
 		for i := 0; i < cap(ring.Data()); i++ {
-			t := ring.Start()
+			t := Start()
 			ring.Stop(t)
 		}
 	}

@@ -54,12 +54,10 @@ func main() {
 			}
 			return
 		}
-		for _, r := range os.Args[1] {
-			if r == '!' {
-				trace = true
-			}
+		if strings.HasSuffix(os.Args[1], "...") {
+			trace = true
 		}
-		needle = strings.Trim(os.Args[1], "! ")
+		needle = strings.Trim(os.Args[1], "!. ")
 	}
 
 	sort.Strings(tests)
@@ -74,12 +72,16 @@ func main() {
 			if unicode.ToLower(rune(needle[j])) == unicode.ToLower(rune(test[i])) {
 				j++
 				if j == len(needle) {
+					var got *exec.Cmd
 					args := strings.Join(os.Args[2:], " ")
 					mode := "!probe.debug"
 					if trace {
 						mode = "!probe.trace"
+						got = exec.Command("dlv", "test", "--", "-test.v", "-test.bench", test, "-test.run=^$", "-test.benchmem", test, mode, args)
+					} else {
+						got = exec.Command("go", "test", "-bench", test, "-run=^$", "-benchmem", "-v", "-args", mode, args)
 					}
-					got := exec.Command("go", "test", "-bench", "-v", "-run", test, "-args", mode, args)
+					got.Stdin = os.Stdin
 					got.Stdout = os.Stdout
 					got.Stderr = os.Stderr
 					if err := got.Run(); err != nil {

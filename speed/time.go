@@ -8,6 +8,12 @@ import (
 	"github.com/montanaflynn/stats"
 )
 
+const (
+	Ns = time.Nanosecond
+	Us = time.Microsecond
+	Ms = time.Millisecond
+)
+
 // T is a time frame.
 type T struct {
 	time.Duration
@@ -51,6 +57,7 @@ func (t T) Format(state fmt.State, verb rune) {
 			goto suffix
 		}
 	}
+
 	if dur == 0 {
 		fmt.Fprint(state, "???")
 	} else {

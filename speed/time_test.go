@@ -17,7 +17,7 @@ func TestNow(t *testing.T) {
 }
 
 func TestFrame_Format(tcase *testing.T) {
-	assertf := motor.Assertf(tcase)
+	assertf := motor.Assert(tcase)
 
 	var (
 		e      = time.Now().UnixNano()
