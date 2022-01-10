@@ -4,90 +4,84 @@ import (
 	"fmt"
 	"strconv"
 	"time"
-
-	"github.com/montanaflynn/stats"
-)
-
-const (
-	Ns = time.Nanosecond
-	Us = time.Microsecond
-	Ms = time.Millisecond
 )
 
 // T is a time frame.
 type T struct {
 	time.Duration
-	// N is meant to represent the frame.
-	N float64
+	left int64
 
-	begin int64
+	// K is a number associated with the time frame.
+	K float64
 }
 
-// Start makes a new time measurement starting now.
+// Now makes a new time measurement starting now.
 //
-//     t0 := speed.Start()
+//     t0 := speed.Now()
 //     <-time.After(100*time.Millisecond)
-//     debug(t0.Stop()) // 101.383ms
+//     t0() // 101.383ms
 //
-func Start() T {
-	return T{begin: time.Now().UnixNano()}
+func Now() func() T {
+	return T{left: time.Now().UnixNano()}.elapsed
 }
 
-func (t T) Stop() T {
-	end := time.Now().UnixNano()
-	t.Duration = time.Duration(end - t.begin)
+func (t T) elapsed() T {
+	right := time.Now().UnixNano()
+	t.Duration = time.Duration(right - t.left)
 	return t
 }
 
-func (t T) Begin() time.Time {
-	return time.Unix(0, t.begin)
+func (t T) Left() time.Time {
+	return time.Unix(0, t.left)
 }
 
-func (t T) End() time.Time {
-	return time.Unix(0, t.begin+int64(t.Duration))
+func (t T) Right() time.Time {
+	return time.Unix(0, t.left+int64(t.Duration))
 }
+
+const stamp = "15:04:05.000000"
 
 func (t T) Format(state fmt.State, verb rune) {
 	dur := int64(t.Duration)
 
 	if state.Flag('+') {
-		fmt.Fprint(state, t.begin, "-")
+		fmt.Fprint(state, t.Left().Format(stamp), "-")
 		if dur != 0 {
-			fmt.Fprint(state, t.begin+dur)
-			goto suffix
+			fmt.Fprint(state, t.Right().Format(stamp))
+		}
+	} else {
+		if dur == 0 {
+			fmt.Fprint(state, "???")
+		} else {
+			fmt.Fprintf(state, "%v", t.Duration)
 		}
 	}
 
-	if dur == 0 {
-		fmt.Fprint(state, "???")
-	} else {
-		fmt.Fprintf(state, "%v", t.Round(time.Microsecond))
-	}
-
-suffix:
-	if t.N != 0 {
-		n := strconv.FormatFloat(t.N, 'f', -1, 64)
-		fmt.Fprintf(state, "(n=%s)", n)
+	if t.K != 0 {
+		n := strconv.FormatFloat(t.K, 'f', -1, 64)
+		fmt.Fprint(state, "("+n+")")
 	}
 }
 
-// Times i an ordered list of time measurements.
-type Times []T
-
-func (ts Times) Mean() time.Duration {
-	t := make([]float64, len(ts))
-	for i := range t {
-		t[i] = float64(ts[i].Duration)
+// After is a convenient wrapper for time.After
+func After(n int, suffix string) <-chan time.Time {
+	var x time.Duration
+	switch suffix {
+	case "ns":
+		x = time.Nanosecond
+	case "us":
+		x = time.Microsecond
+	case "ms":
+		x = time.Millisecond
+	case "s":
+		x = time.Second
+	case "m":
+		x = time.Minute
+	case "h":
+		x = time.Hour
+	default:
+		panic("speed: unknown suffix " + suffix)
 	}
-	mean, _ := stats.Mean(t)
-	return time.Duration(mean).Round(time.Microsecond)
-}
 
-func (ts Times) Stddev() time.Duration {
-	t := make([]float64, len(ts))
-	for i := range t {
-		t[i] = float64(ts[i].Duration)
-	}
-	sdev, _ := stats.StdDevP(t)
-	return time.Duration(sdev).Round(time.Microsecond)
+	return time.NewTimer(time.Duration(n) * x).C
 }

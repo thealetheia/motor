@@ -15,13 +15,15 @@ type B struct {
 	ring bool
 	pos  int // ring position
 	done chan struct{}
+
+	dk, dt trivia
 }
 
 // Of measures function run time.
 func Of(f func()) T {
-	t0 := Start()
+	t := Now()
 	f()
-	return t0.Stop()
+	return t()
 }
 
 // Many constructs a benchmark.
@@ -38,12 +40,44 @@ func Many(ringSize ...int) B {
 	return b
 }
 
-// Data returns a list of measurements.
-func (b B) Data() Times {
+// Avg corresponds to the arithmetic average.
+func (b B) Avg() (t time.Duration, k float64) {
+	return b.Avgt(), b.Avgk()
+}
+func (b B) Avgt() time.Duration {
+	return time.Duration(b.dt.avg)
+}
+func (b B) Avgk() float64 {
+	return b.dk.avg
+}
+
+// Std corresponds to the standard deviation.
+func (b B) Std() (t time.Duration, k float64) {
+	return b.Stdt(), b.Stdk()
+}
+func (b B) Stdt() time.Duration {
+	return time.Duration(b.dt.std())
+}
+func (b B) Stdk() float64 {
+	return b.dk.std()
+}
+
+// All returns a list of measurements.
+func (b B) All() []T {
 	return b.tf
 }
 
-func (b *B) addframe(t T) {
+// Adds pushes a time frame to the benchmark ring.
+func (b *B) Add(t T, value ...float64) {
+	switch len(value) {
+	case 0:
+	case 1:
+		t.K = value[0]
+	default:
+		panic("speed: too many arguments")
+	}
+	b.dk.update(t.K)
+	b.dt.update(float64(t.Duration))
 	if b.pos == len(b.tf) {
 		if b.ring && b.pos == cap(b.tf) {
 			b.pos = 0
@@ -62,39 +96,24 @@ func (b *B) addframe(t T) {
 	}
 }
 
-// Start constructs a new time measurement frame.
-func (b *B) Start() T {
-	return T{begin: time.Now().UnixNano()}
-}
-
-// Stop
-func (b *B) Stop(frame T) T {
-	end := time.Now().UnixNano()
-	frame.Duration = time.Duration(end - frame.begin)
-	b.addframe(frame)
-	return frame
-}
-
-// Push adds time frames to the benchmark ring.
-func (b *B) Push(times ...T) {
-	for _, t := range times {
-		b.addframe(t)
-	}
-}
-
 func (b B) Format(state fmt.State, verb rune) {
-	t := b.Data()
+	avgt, stdt := b.Avgt(), b.Stdt()
+	avgk, stdk := b.Avgk(), b.Stdk()
 
-	// prec, ok := state.Precision()
-	// fmt.Println(prec, ok)
-
-	fmt.Fprintf(state, "%v (n=%d, stddev=%v)",
-		t.Mean(), len(t), t.Stddev())
+	if avgk == 0.0 {
+		fmt.Fprintf(state,
+			"%v (n=%d, stdt=%v)",
+			avgt, len(b.tf), stdt)
+	} else {
+		fmt.Fprintf(state,
+			"%v/%v (n=%d, stdt=%v, stdk=%g)",
+			avgt, avgk, len(b.tf), stdt, stdk)
+	}
 }
 
 // Subscribe emits a list of measurements whenever the
 // whole ring is fulfilled once.
-func (b *B) Subscribe() chan Times {
+func (b *B) Subscribe() chan []T {
 	if !b.ring {
 		panic("speed: can only subscribe for rings")
 	}
@@ -103,7 +122,7 @@ func (b *B) Subscribe() chan Times {
 	}
 	b.done = make(chan struct{})
 
-	ts := make(chan Times)
+	ts := make(chan []T)
 	go func() {
 		for range b.done {
 			t := make([]T, len(b.tf))

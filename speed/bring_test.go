@@ -5,40 +5,70 @@ import (
 	"testing"
 	"time"
 
-	"aletheia.icu/motor"
+	"aletheia.icu/motor/assert"
+
+	flynn "github.com/montanaflynn/stats"
 )
 
 const ms = time.Millisecond
 
 func TestTime_Now(t *testing.T) {
-	b := Many()
-
-	trace("inb4", len(b.tf), b.tf)
+	ts := Many()
 	for i := 0; i < 50; i++ {
-		t := b.Start()
+		t0 := Now()
 		<-time.After(15*ms + time.Duration(rand.Intn(5))*ms)
-		b.Stop(t)
+		ts.Add(t0())
+	}
+}
+
+func TestTime_Stats(t *testing.T) {
+	assert := assert.Assert(t)
+
+	const n = 10
+	ts := Many(n)
+	for i := float64(0); i < n; i++ {
+		t0 := Now()
+		<-After(rand.Intn(20), "ms")
+		ts.Add(t0())
 	}
 
-	debug(b)
+	meanT, meanX := ts.Avg()
+	sdT, sdX := ts.Std()
+
+	x := make([]float64, n)
+	for i := range x {
+		x[i] = ts.tf[i].K
+	}
+	meanX_, _ := flynn.Mean(x)
+	sdX_, _ := flynn.StdDevP(x)
+	tt := make([]float64, n)
+	for i := range tt {
+		tt[i] = float64(ts.tf[i].Duration)
+	}
+	meanT_, _ := flynn.Mean(tt)
+	sdT_, _ := flynn.StdDevP(tt)
+
+	assert(sdX-sdX_ < 1.0/1e6)
+	assert(float64(sdT)-sdT_ < 1.0/1e6)
+	assert(meanX-meanX_ < 1.0/1e6)
+	assert(float64(meanT)-meanT_ < 1.0/1e6)
 }
 
 func TestTime_Format(t *testing.T) {
 }
 
 func TestRing_Format(t *testing.T) {
-	assert := motor.Assert(t)
+	//assert := assert.Assert(t)
 
 	const n = 10
-	b := Many(n)
-	for i := 0; i < n; i++ {
-		t := b.Start()
-		t.N = float64(i)
-		<-time.After(10 * Ms)
-		b.Stop(t)
+	ts := Many(n)
+	for i := float64(0); i < n; i++ {
+		t0 := Now()
+		<-After(10, "ms")
+		ts.Add(t0())
 	}
 
 	// Printing 95 percentile stats.
-	assert("", "%.95v", b)
-	assert("", "")
+	//assert("", "%.95v", ts)
+	//assert("", "")
 }
