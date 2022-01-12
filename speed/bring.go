@@ -16,7 +16,7 @@ type B struct {
 	pos  int // ring position
 	done chan struct{}
 
-	dk, dt trivia
+	dk, dt stats
 }
 
 // Of measures function run time.

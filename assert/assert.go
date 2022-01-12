@@ -19,7 +19,7 @@ var (
 	redBold = color.New(color.FgRed, color.Bold)
 )
 
-func For(t *testing.T) AssertFn {
+func New(t *testing.T) AssertFn {
 	return func(A ...interface{}) {
 		var b bytes.Buffer
 		switch len(A) {
@@ -55,21 +55,13 @@ func For(t *testing.T) AssertFn {
 			if left == right {
 				return
 			}
-			if diff := diff(left, right); diff != "" {
-				fmt.Fprintf(&b, diff)
-			} else {
-				bold.Fprintln(&b, "\tEXPECTED")
-				fmt.Fprintln(&b, left)
-				bold.Fprintln(&b, "\tRECEIVED")
-				fmt.Fprintln(&b, right, "\a")
-			}
+			b.WriteString(cmp.Diff(left, right))
 		}
 
 		localise()
 		if b.Len() > 0 {
 			fmt.Print(b.String())
 		}
-		// runtime.Breakpoint()
 		t.FailNow()
 	}
 }
@@ -93,7 +85,7 @@ func localise() {
 		j++
 	}
 
-	redBold.Print("!!! ")
+	redBold.Print("! ")
 	fmt.Printf("%v:%v\n", file, line+1)
 
 	fmt.Println()

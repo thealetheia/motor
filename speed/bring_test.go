@@ -22,7 +22,7 @@ func TestTime_Now(t *testing.T) {
 }
 
 func TestTime_Stats(t *testing.T) {
-	assert := assert.Assert(t)
+	assert := assert.New(t)
 
 	const n = 10
 	ts := Many(n)
@@ -58,7 +58,7 @@ func TestTime_Format(t *testing.T) {
 }
 
 func TestRing_Format(t *testing.T) {
-	//assert := assert.Assert(t)
+	//assert := assert.New(t)
 
 	const n = 10
 	ts := Many(n)
