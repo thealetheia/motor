@@ -23,10 +23,10 @@ func New(t *testing.T) AssertFn {
 	return func(A ...interface{}) {
 		var b bytes.Buffer
 		switch len(A) {
-		// silent
 		case 0:
-		// error, bool
+			// silent assert
 		case 1:
+			// error, bool
 			switch a := A[0].(type) {
 			case error:
 				if a == nil {
@@ -41,14 +41,17 @@ func New(t *testing.T) AssertFn {
 					return
 				}
 			}
-		// pair-wise
 		case 2:
-			if cmp.Equal(A[0], A[1]) {
+			// TODO: pretty print deep reflect pair-wise comparison
+			left := fmt.Sprintf("%#v", A[0])
+			right := fmt.Sprintf("%#v", A[1])
+			if left == right {
 				return
 			}
-			b.WriteString(cmp.Diff(A[0], A[1]))
-		// fmt style
+			b.WriteString(left+"\n")
+			b.WriteString(right+"\n")
 		default:
+			// fmt style comparison
 			left := fmt.Sprint(A[0])
 			format := A[1].(string)
 			right := fmt.Sprintf(format, A[2:]...)
