@@ -8,17 +8,17 @@ import (
 //
 type Adapter interface {
 	// Begin is called whenever a procedure has started.
-	Begin(name, id string) error
+	Begin(*Brr) error
 
 	// Write manages the log transformation.
 	//
 	// This function transforms the provided chunk into
 	// the intermediate batching buffer in charge of the
 	// flush valve.
-	Write(id string, chunk Chunk, w io.Writer) error
+	Write(brr *Brr, chunk Chunk, w io.Writer) error
 
 	// End is called after the final flush.
-	End(id string) error
+	End(*Brr) error
 
 	// "Real" destination of the log stream.
 	//

@@ -11,16 +11,16 @@ type Chunk struct {
 	Debug bool
 
 	// A list of inline objects.
-	Obj []Object
+	Tags []Tag
 }
 
-// Object is a structured log element.
+// Tag is a structured log element.
 //
 // They are extracted from named format string operands
 // supported by out printf implementation.
 //
 // See: Brr.Printf()
-type Object struct {
+type Tag struct {
 	K string
 	V interface{}
 }

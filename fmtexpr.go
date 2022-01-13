@@ -28,7 +28,7 @@ type tagmap struct {
 	tags   []tag
 }
 
-// filexpr converts a format string with named operands into a
+// fmtexpr converts a format string with named operands into a
 // classic format string and a tag map
 func fmtexpr(format string) tagmap {
 	if pair, ok := fmtexprCache[format]; ok {

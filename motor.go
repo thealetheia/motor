@@ -19,6 +19,9 @@ type Brr struct {
 	// Unique context identifier.
 	Id string
 
+	// Procedure name.
+	Name string
+
 	// Execution mode.
 	Debug bool
 
