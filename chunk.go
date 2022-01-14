@@ -1,31 +1,29 @@
 package motor
 
-import "strings"
+import (
+	"fmt"
+	"io"
+)
 
-// Chunk represents a single log write.
+// Chunk represents a single log write to the log buffer.
 type Chunk struct {
-	// A formatted message.
-	Content string
+	// Printf format string, if provided.
+	Format string
 
-	// True if a debug write.
+	// Print arguments, if provided.
+	Args  []interface{}
+	Tags  []Tag
+	Flags []Flag
+
+	// True if the chunk is a debug message.
 	Debug bool
-
-	// A list of inline objects.
-	Tags []Tag
 }
 
-// Tag is a structured log element.
-//
-// They are extracted from named format string operands
-// supported by out printf implementation.
-//
-// See: Brr.Printf()
-type Tag struct {
-	K string
-	V interface{}
-}
-
-// Endl determines if the chunk ends in a newline.
-func (b Chunk) Endl() bool {
-	return strings.HasSuffix(b.Content, "\n")
+// Autowrite prints (and formats) the chunk arguments.
+func (c Chunk) Autowrite(w io.Writer) {
+	if c.Format == "" {
+		fmt.Fprintln(w, c.Args...)
+	} else {
+		fmt.Fprintf(w, c.Format, c.Args...)
+	}
 }

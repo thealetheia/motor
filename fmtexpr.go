@@ -14,18 +14,23 @@ var (
 	fmtexprCache = map[string]tagmap{}
 )
 
-// tag is a named format string operand
+// Tag is a structured log element.
+//
+// They are extracted from named format string operands
+// supported by out printf implementation.
 //
 // %{label}s, %{label}#+v
-type tag struct {
-	index int
-	label string
+//
+// See: Brr.Printf()
+type Tag struct {
+	Pos   int
+	Label string
 }
 
 // tagmap is a (format string, tags) pair
 type tagmap struct {
 	format string
-	tags   []tag
+	tags   []Tag
 }
 
 // fmtexpr converts a format string with named operands into a
@@ -60,13 +65,13 @@ func fmtexpr(format string) tagmap {
 	})
 
 	// arranging named ops and their abs position
-	var tags []tag
+	var tags []Tag
 	for i, verb := range verbs {
 		if !verb.named {
 			continue
 		}
 		// named[i][1] is the capture group of op's name
-		tags = append(tags, tag{i, named[len(tags)][1]})
+		tags = append(tags, Tag{i, named[len(tags)][1]})
 		if len(tags) == len(namedpos) {
 			break
 		}

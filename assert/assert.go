@@ -48,8 +48,8 @@ func New(t *testing.T) AssertFn {
 			if left == right {
 				return
 			}
-			b.WriteString(left+"\n")
-			b.WriteString(right+"\n")
+			b.WriteString(left + "\n")
+			b.WriteString(right + "\n")
 		default:
 			// fmt style comparison
 			left := fmt.Sprint(A[0])

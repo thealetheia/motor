@@ -5,6 +5,15 @@ import (
 	"time"
 )
 
+// Flag allows for customization of chunks.
+type Flag int
+
+const (
+	// Pretty yellow warning thing :-)
+	Warn Flag = iota
+	Trace
+)
+
 // New returns a new motor.
 func New(adapters ...Adapter) *Brr {
 	return &Brr{w: adapters}
