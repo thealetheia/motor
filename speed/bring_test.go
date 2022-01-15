@@ -12,13 +12,55 @@ import (
 
 const ms = time.Millisecond
 
-func TestTime_Now(t *testing.T) {
+func TestB_Vector(t *testing.T) {
+	assert := assert.New(t)
+
+	const n = 10
+
 	ts := Many()
-	for i := 0; i < 50; i++ {
-		t0 := Now()
-		<-time.After(15*ms + time.Duration(rand.Intn(5))*ms)
-		ts.Add(t0())
+	for i := float64(0); i < n; i++ {
+		ts.Add(Now()(), i)
 	}
+
+	// B-vector length grows linearly.
+	assert(n, ts.Len())
+	// For b-vectors, Ordered() and Unordered() are equal.
+	assert(ts.Ordered(), ts.Unordered())
+}
+
+func TestB_Ring(t *testing.T) {
+	assert := assert.New(t)
+
+	const n = 10
+
+	ts := Many(10)
+	for i := float64(0); i < n; i++ {
+		ts.Add(Now()(), i)
+		// B-ring length grows linearly until it's full.
+		assert(i+1, ts.Len())
+		// Equal as long as b-ring is not full.
+		assert(ts.Ordered(), ts.Unordered())
+	}
+
+	ord := ts.Ordered()
+	assert(0, ord[0].K)
+	assert(n-1, ord[n-1].K)
+
+	ts.Add(Now()(), 42)
+	assert(n, ts.Len())
+	assert(n, ts.Cap())
+
+	uord, ord := ts.Unordered(), ts.Ordered()
+	assert(42, uord[0].K)
+	assert(42, ord[len(ord)-1].K)
+
+	for i := float64(1); i < n; i++ {
+		ts.Add(Now()(), i)
+	}
+	uord, ord = ts.Unordered(), ts.Ordered()
+	assert(ord, uord)
+	assert(42, ord[0].K)
+	assert(n-1, ord[len(ord)-1].K)
 }
 
 func TestTime_Stats(t *testing.T) {

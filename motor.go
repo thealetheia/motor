@@ -1,106 +1,63 @@
 package motor
 
 import (
-	"bytes"
-	"time"
+	"aletheia.icu/motor/speed"
 )
 
-// Flag allows for customization of chunks.
-type Flag int
-
-const (
-	// Pretty yellow warning thing :-)
-	Warn Flag = iota
-	Trace
-)
-
-// New returns a new motor.
-func New(adapters ...Adapter) *Brr {
-	return &Brr{w: adapters}
-}
-
-// Brr is the motorised log context.
+// Config is used to set motor up.
 //
-// If constructed from Func or Gofunc, it will attempt to
-// predict both the average log size and time to flush in
-// order to utilize memory most efficiently.
-type Brr struct {
-	// Unique context identifier.
-	Id string
-
-	// Procedure name.
-	Name string
-
-	// Execution mode.
+type Config struct {
+	// If true, motor will let debug writes through.
 	Debug bool
 
-	w    []Adapter
-	b    bytes.Buffer
-	last time.Time
+	// Motor can write into multiple devices simultaneously.
+	//
+	// For example, you can have human-readable formatted
+	// messages end up in stdout, structured JSON log in
+	// the dedicated log file, and have a seperate exhaust
+	// reserved for metrics only.
+	Adapters []Adapter
 }
 
-// Func consructs a new motorised log.
+// Motor is the global logger context.
 //
-// This function will allocate a new log buffer according
-// to the estimate of procedure demands known at the time
-// of its creation.
+// All writes to it are performed immediately, as opposed
+// to contextual writes which may be held up in a buffer
+// until further flushes.
 //
-// Use consistent procedure names.
-func (brr *Brr) Func(name, id string) *Brr {
-	return nil
+type Motor struct {
+	Brr
+
+	sinks []Adapter
+	pred  map[string]speed.B
 }
 
-// Gofunc constructs a new asynchronous context.
-func (brr *Brr) Gofunc(name, id string, f func(*Brr)) {
-	go func() {
-		f(nil)
-	}()
+// New returns a new motor.
+func New(config Config) *Motor {
+	m := &Motor{
+		sinks: config.Adapters,
+		pred:  map[string]speed.B{},
+	}
+
+	m.Brr = Brr{
+		motor: m,
+		debug: config.Debug,
+	}
+
+	return m
 }
 
-// Printf puts a fragment of a message into the log buffer.
-//
-// Unless the format string ends in a newline, consecutive
-// calls to this function will be treated as a single log
-// message; the log buffer won't be flushed in-between
-// to prevent line splits.
-//
-// Make sure to finish any Printf series on a newline.
-func (brr *Brr) Printf(format string, a ...interface{}) {
+func splitArgs(a []interface{}) (flags []Flag, args []interface{}) {
+	var i int
 
-}
+	for i = range a {
+		f, ok := a[i].(Flag)
+		if !ok {
+			break
+		}
+		flags = append(flags, f)
+	}
 
-// Println puts a new message into the log buffer.
-func (brr *Brr) Println(a ...interface{}) {
-
-}
-
-// Debugf is the debug mode Printf counterpart.
-//
-// If the context is not debugging, this function will
-// return false immediately without ever consulting
-// the log buffer.
-//
-// In debug mode, it will always return true.
-func (brr *Brr) Debugf(format string, a ...interface{}) bool {
-	return brr.Debug
-}
-
-// Debugln is the debug mode Println counterpart.
-//
-// If the context is not debugging, this function will
-// return false immediately without ever consulting
-// the log buffer.
-//
-// In debug mode, it will always return true.
-func (brr *Brr) Debugln(a ...interface{}) bool {
-	return brr.Debug
-}
-
-// Flush orders the final flush of the log buffer.
-//
-// This function is called when there's no more work to
-// be done per the existing context. All further writes
-// will be ignored.
-func (brr *Brr) Flush() {
-
+	args = a[i:]
+	return
 }

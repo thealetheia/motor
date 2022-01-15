@@ -10,16 +10,16 @@ type Chunk struct {
 	// Printf format string, if provided.
 	Format string
 
-	// Print arguments, if provided.
-	Args  []interface{}
+	Args []interface{}
+	// Named printf arguments (tags) list.
 	Tags  []Tag
 	Flags []Flag
 
-	// True if the chunk is a debug message.
+	// True if debug writes are enabled.
 	Debug bool
 }
 
-// Autowrite prints (and formats) the chunk arguments.
+// Autowrite prints (and formats) chunk arguments.
 func (c Chunk) Autowrite(w io.Writer) {
 	if c.Format == "" {
 		fmt.Fprintln(w, c.Args...)
@@ -27,3 +27,23 @@ func (c Chunk) Autowrite(w io.Writer) {
 		fmt.Fprintf(w, c.Format, c.Args...)
 	}
 }
+
+// Flag returns true if chunk contains flag.
+func (c Chunk) Flag(f Flag) bool {
+	for i := range c.Flags {
+		if c.Flags[i] == f {
+			return true
+		}
+	}
+	return false
+}
+
+// Flag allows for customization of chunks.
+type Flag int
+
+const (
+	Error Flag = iota
+	// Pretty yellow warning thing :-)
+	Warn
+	Trace
+)

@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// B is a benchmark: repeated time measurement.
+// B is a benchmark ring.
 //
 // Non-zero length B's function as a ring, effectively
 // rewriting old frames with the new ones. Zero length
@@ -14,7 +14,6 @@ type B struct {
 	tf   []T
 	ring bool
 	pos  int // ring position
-	done chan struct{}
 
 	dk, dt stats
 }
@@ -44,9 +43,13 @@ func Many(ringSize ...int) B {
 func (b B) Avg() (t time.Duration, k float64) {
 	return b.Avgt(), b.Avgk()
 }
+
+// Avgt returns the average duration of all measurements.
 func (b B) Avgt() time.Duration {
 	return time.Duration(b.dt.avg)
 }
+
+// Avgk returns the average of stored values in the ring.
 func (b B) Avgk() float64 {
 	return b.dk.avg
 }
@@ -55,16 +58,38 @@ func (b B) Avgk() float64 {
 func (b B) Std() (t time.Duration, k float64) {
 	return b.Stdt(), b.Stdk()
 }
+
+// Avgt returns the standard deviation of the durations.
 func (b B) Stdt() time.Duration {
 	return time.Duration(b.dt.std())
 }
+
+// Avgt returns the standard deviation of the K-values.
 func (b B) Stdk() float64 {
 	return b.dk.std()
 }
 
-// All returns a list of measurements.
-func (b B) All() []T {
+// Len is the number of items in the underlying slice.
+func (b B) Len() int {
+	return len(b.tf)
+}
+
+// Len is the capacity of the underlying slice.
+func (b B) Cap() int {
+	return cap(b.tf)
+}
+
+// Unordered returns the list of time frames as-is.
+func (b B) Unordered() []T {
 	return b.tf
+}
+
+// Ordered returns the list of frames adjusted for ring position.
+func (b B) Ordered() []T {
+	if !b.ring {
+		return b.tf
+	}
+	return append(b.tf[b.pos:], b.tf[:b.pos]...)
 }
 
 // Adds pushes a time frame to the benchmark ring.
@@ -78,6 +103,7 @@ func (b *B) Add(t T, value ...float64) {
 	}
 	b.dk.update(t.K)
 	b.dt.update(float64(t.Duration))
+
 	if b.pos == len(b.tf) {
 		if b.ring && b.pos == cap(b.tf) {
 			b.pos = 0
@@ -90,10 +116,6 @@ func (b *B) Add(t T, value ...float64) {
 	}
 	b.tf[b.pos] = t
 	b.pos++
-
-	if b.ring && b.done != nil && b.pos == cap(b.tf) {
-		b.done <- struct{}{}
-	}
 }
 
 func (b B) Format(state fmt.State, verb rune) {
@@ -109,29 +131,4 @@ func (b B) Format(state fmt.State, verb rune) {
 			"%v/%v (n=%d, stdt=%v, stdk=%g)",
 			avgt, avgk, len(b.tf), stdt, stdk)
 	}
-}
-
-// Subscribe emits a list of measurements whenever the
-// whole ring is fulfilled once.
-func (b *B) Subscribe() chan []T {
-	if !b.ring {
-		panic("speed: can only subscribe for rings")
-	}
-	if b.done != nil {
-		panic("speed: ring is already subscribed to")
-	}
-	b.done = make(chan struct{})
-
-	ts := make(chan []T)
-	go func() {
-		for range b.done {
-			t := make([]T, len(b.tf))
-			copy(t, b.tf)
-			b.tf = b.tf[:]
-			b.pos = 0
-			ts <- t
-		}
-		close(ts)
-	}()
-	return ts
 }
