@@ -1,5 +1,5 @@
 # Motor
-> ⚙️  A set of tools for logging, debugging, and measuring of your code.
+> ⚙️  A set of tools for logging, debugging, and measuring of Go code.
 
 ```go
 package main

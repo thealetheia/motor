@@ -93,7 +93,7 @@ func (brr *Brr) Debugln(a ...interface{}) {
 // be done per the existing context. All further writes
 // will be ignored.
 func (brr *Brr) Flush() {
-
+	return
 }
 
 func (brr *Brr) write(debug bool, format string, a ...interface{}) {
@@ -108,18 +108,21 @@ func (brr *Brr) write(debug bool, format string, a ...interface{}) {
 
 	chunk := Chunk{
 		Format: format,
-		Args: args,
-		Tags: tags,
-		Flags: flags,
-		Debug: debug,
+		Args:   args,
+		Tags:   tags,
+		Flags:  flags,
+		Debug:  debug,
 	}
 
-	for i, adp := range brr.motor.sinks {
-		adp.Write(brr, chunk, brr.chunkWriter(i))
+	for _, adp := range brr.motor.sinks {
+		if adp.Tagged() && tags == nil {
+			continue
+		}
+		adp.Write(brr, chunk, brr.chunkWriter(adp))
 	}
 }
 
 // TODO: implement the super buffer logic
-func (brr *Brr) chunkWriter(adapterIdx int) io.Writer {
-	return io.Discard
+func (brr *Brr) chunkWriter(adp Adapter) io.Writer {
+	return adp.Device()
 }

@@ -32,5 +32,5 @@ type Adapter interface {
 	AllowedLatency() time.Duration
 
 	// Only let through tagged writes.
-	TaggedOnly() bool
+	Tagged() bool
 }

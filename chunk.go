@@ -15,7 +15,7 @@ type Chunk struct {
 	Tags  []Tag
 	Flags []Flag
 
-	// True if debug writes are enabled.
+	// True if the chunk is a debug write in itself.
 	Debug bool
 }
 

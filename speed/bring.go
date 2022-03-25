@@ -86,7 +86,7 @@ func (b B) Unordered() []T {
 
 // Ordered returns the list of frames adjusted for ring position.
 func (b B) Ordered() []T {
-	if !b.ring {
+	if !b.ring || b.pos == 0 {
 		return b.tf
 	}
 	return append(b.tf[b.pos:], b.tf[:b.pos]...)
