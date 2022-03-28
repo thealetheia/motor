@@ -2,9 +2,7 @@ module aletheia.icu/motor
 
 go 1.15
 
-retract (
-	v0.5.1 // stupid mistake
-)
+retract v0.5.1 // stupid mistake
 
 require (
 	github.com/fatih/color v1.13.0

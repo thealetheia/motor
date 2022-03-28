@@ -4,7 +4,7 @@ import (
 	"aletheia.icu/motor/speed"
 )
 
-// Config is used to set motor up.
+// Config is a set of preferences required to start it.
 //
 type Config struct {
 	// If true, motor will let debug writes through.
@@ -16,7 +16,7 @@ type Config struct {
 	// messages end up in stdout, structured JSON log in
 	// the dedicated log file, and have a seperate exhaust
 	// reserved for metrics only.
-	Adapters []Adapter
+	Sinks []Adapter
 }
 
 // Motor is the global logger context.
@@ -35,7 +35,7 @@ type Motor struct {
 // New returns a new motor.
 func New(config Config) *Motor {
 	m := &Motor{
-		sinks: config.Adapters,
+		sinks: config.Sinks,
 		pred:  map[string]speed.B{},
 	}
 

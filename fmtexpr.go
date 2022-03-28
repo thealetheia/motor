@@ -8,8 +8,8 @@ import (
 var (
 	// normal verbs: %a %+b %#-1c
 	normfmt = regexp.MustCompile(`%([#\+\-\d\.0\s]+)?[A-aZ-z%]`)
-	// named verbs: %{name}.2f
-	namedfmt = regexp.MustCompile(`%{(\w+)}(([#\+\-\d\.0\s]+)?([A-aZ-z]))`)
+	// named verbs: %(name).2f
+	namedfmt = regexp.MustCompile(`%\((\w+)\)(([#\+\-\d\.0\s]+)?([A-aZ-z]))`)
 	// avoid repeated computation of the tag map
 	fmtexprCache = map[string]tagmap{}
 )
@@ -19,7 +19,7 @@ var (
 // They are extracted from named format string operands
 // supported by out printf implementation.
 //
-// %{label}s, %{label}#+v
+// %(label)s, %(label)#+v
 //
 // See: Brr.Printf()
 type Tag struct {
@@ -33,8 +33,9 @@ type tagmap struct {
 	tags   []Tag
 }
 
-// fmtexpr converts a format string with named operands into a
-// classic format string and a tag map
+// This function turns a format string and a bunch of named operands
+// into a tagmap— a traditional fmt string along with the identified
+// tags.
 func fmtexpr(format string) tagmap {
 	if pair, ok := fmtexprCache[format]; ok {
 		return pair

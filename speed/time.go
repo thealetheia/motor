@@ -3,6 +3,7 @@ package speed
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -84,4 +85,27 @@ func After(n int, suffix string) <-chan time.Time {
 	}
 
 	return time.NewTimer(time.Duration(n) * x).C
+}
+
+func Trunc(d time.Duration, digits int) string {
+	s := d.String()
+
+	doti := strings.LastIndex(s, ".")
+	if doti < 0 {
+		return s
+	}
+
+	i := doti + 1
+	for ; i < len(s); i++ {
+		digit := s[i] >= '0' && s[i] <= '9'
+		if !digit {
+			break
+		}
+	}
+
+	if i-doti-1 <= digits {
+		return s
+	}
+
+	return s[:doti+1+digits] + s[i:]
 }
