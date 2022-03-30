@@ -37,27 +37,21 @@ type Adapter interface {
 	// Max allowed time-to-flush for any given write.
 	//
 	// Returns negative if unlimited.
-	MaxLatency() time.Duration
-
-	// Indicates whether if the adapter collects untagged
-	// write chunks.
-	//
-	// It might not, i.e. when collecting telemetry only.
-	TaggerStagger() bool
+	TTF() time.Duration
 }
 
-// Simple is a basic adapter with terminal formatting.
-type Simple struct {
+// Example is a basic adapter with terminal formatting.
+type Example struct {
 }
 
-func (adp *Simple) Begin(brr *Brr) {
+func (adp *Example) Begin(brr *Brr) {
 	bold := color.New(color.Bold)
 	bold.Print("BEGIN")
 	fmt.Printf(" %s %s\n",
 		brr.Namekind, brr.Id)
 }
 
-func (adp *Simple) Write(brr *Brr, c Chunk, w io.Writer) {
+func (adp *Example) Write(brr *Brr, c Chunk, w io.Writer) {
 	fmt.Fprintf(w, "[%s+%v] ", brr.Id,
 		speed.Trunc(time.Now().Sub(brr.T0), 4))
 
@@ -81,21 +75,17 @@ func (adp *Simple) Write(brr *Brr, c Chunk, w io.Writer) {
 	fmt.Fprintln(w)
 }
 
-func (adp *Simple) End(brr *Brr) {
+func (adp *Example) End(brr *Brr) {
 	bold := color.New(color.Bold)
 	bold.Print("END")
 	fmt.Printf(" %s %s AFTER %v\n",
 		brr.Namekind, brr.Id, time.Now().Sub(brr.T0))
 }
 
-func (adp *Simple) Device() io.Writer {
+func (adp *Example) Device() io.Writer {
 	return os.Stdout
 }
 
-func (adp *Simple) MaxLatency() time.Duration {
+func (adp *Example) MaxLatency() time.Duration {
 	return -time.Second
-}
-
-func (adp *Simple) TaggerStagger() bool {
-	return false
 }

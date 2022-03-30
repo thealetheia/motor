@@ -3,6 +3,7 @@ package motor
 import (
 	"fmt"
 	"io"
+	"strings"
 )
 
 // Chunk represents a single log write to the log buffer.
@@ -24,6 +25,10 @@ func (c Chunk) Autowrite(w io.Writer) {
 	if c.Format == "" {
 		fmt.Fprintln(w, c.Args...)
 	} else {
+		f := c.Format
+		if !strings.HasSuffix(f, "\n") {
+			f += "\n"
+		}
 		fmt.Fprintf(w, c.Format, c.Args...)
 	}
 }

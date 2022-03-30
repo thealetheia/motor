@@ -122,10 +122,6 @@ func (brr *Brr) write(debug bool, format string, a ...interface{}) {
 	t := time.Now()
 
 	for _, adp := range brr.motor.sinks {
-		// Skip untagged messages for adapters unwilling to write them.
-		if adp.TaggerStagger() && tags == nil {
-			continue
-		}
 		adp.Write(brr, chunk, brr.chunkWriter(adp))
 	}
 

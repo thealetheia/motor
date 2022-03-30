@@ -1,6 +1,8 @@
 package motor
 
 import (
+	"time"
+
 	"aletheia.icu/motor/speed"
 )
 
@@ -42,6 +44,7 @@ func New(config Config) *Motor {
 	m.Brr = Brr{
 		motor: m,
 		debug: config.Debug,
+		last:  time.Now(),
 	}
 
 	return m

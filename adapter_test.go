@@ -28,7 +28,7 @@ func randomEmoji() string {
 
 func TestSimple(t *testing.T) {
 	// a simple motor
-	m := New(Config{Sinks: []Adapter{&Simple{}}, Debug: true})
+	m := New(Config{Sinks: []Adapter{&Example{}}, Debug: true})
 
 	brr := m.Func("/spool", randomEmoji())
 	defer brr.Flush()
