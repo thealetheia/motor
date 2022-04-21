@@ -22,7 +22,7 @@ func TestFrame_Format(tcase *testing.T) {
 	t = T{Duration: 100 * time.Second, left: t0.UnixNano()}
 
 	// комментарий подтягивается в вывод
-	check("23:08:41.000000-23:10:21.000000", "%+v", t)
+	check("22:08:41.000000-22:10:21.000000", "%+v", t)
 
 	t = T{K: 5.51, left: b}
 	check("???(5.51)", "%v", t)

@@ -10,10 +10,10 @@ import (
 // T is a time frame.
 type T struct {
 	time.Duration
-	left int64
-
 	// K is a number associated with the time frame.
 	K float64
+
+	left int64
 }
 
 // Now makes a new time measurement starting now.
@@ -62,6 +62,10 @@ func (t T) Format(state fmt.State, verb rune) {
 		n := strconv.FormatFloat(t.K, 'f', -1, 64)
 		fmt.Fprint(state, "("+n+")")
 	}
+}
+
+func (t T) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + t.Duration.String() + `"`), nil
 }
 
 // After is a convenient wrapper for time.After
