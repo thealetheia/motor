@@ -29,7 +29,7 @@ func (c Chunk) Autowrite(w io.Writer) {
 		if !strings.HasSuffix(f, "\n") {
 			f += "\n"
 		}
-		fmt.Fprintf(w, c.Format, c.Args...)
+		fmt.Fprintf(w, f, c.Args...)
 	}
 }
 
